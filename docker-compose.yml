@@ -13,6 +13,16 @@ services:
       - log_data:/app/logs
     restart: unless-stopped
 
+  db-viewer:
+    image: coleifer/sqlite-web
+    ports:
+      - "8080:8080"
+    volumes:
+      - sqlite_data:/data/db
+    environment:
+      - SQLITE_DATABASE=/data/db/gameData.db
+    restart: unless-stopped
+
 volumes:
   sqlite_data:
   log_data:
