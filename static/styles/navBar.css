@@ -4,7 +4,7 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-
+  margin: 0 auto;
 }
 
 .icon {
@@ -12,22 +12,42 @@
 }
 
 .nav-link {
-    background: #62727b;
-    padding: .75em;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    padding: .75em 1.25em;
     text-decoration: none;
     color: #ffffff;
-    box-shadow: .2em .2em .25em -.1em #00000070;
-    border-radius: .4em;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    border-radius: .5em;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.9em;
 }
 
 .nav-link:hover {
-    background: #37474f;
-    padding: .75em;
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
     color: #ffffff;
     text-decoration: none;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
 }
 
-.centerNav{
+.nav-link.confirmation {
+    background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+    box-shadow: 0 4px 15px rgba(244, 63, 94, 0.3);
+}
+
+.nav-link.confirmation:hover {
+    background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+    box-shadow: 0 6px 20px rgba(244, 63, 94, 0.4);
+}
+
+.centerNav {
     display: flex;
     justify-content: center;
+    align-items: center;
+    padding: 1.5em;
+    background: #1e1b4b;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
