@@ -1,0 +1,16 @@
+tags:
+  - Session Management
+summary: Enter a game session
+parameters:
+  - name: id
+    in: query
+    type: integer
+    required: true
+    description: Game session ID
+responses:
+  200:
+    description: Successfully entered session
+  302:
+    description: Redirects to games menu
+  404:
+    description: Session not found

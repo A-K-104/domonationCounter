@@ -1,0 +1,19 @@
+tags:
+  - Game Management
+summary: Update session bonus settings
+parameters:
+  - name: sessionId
+    in: path
+    type: integer
+    required: true
+    description: Game session ID
+  - name: bonus
+    in: formData
+    type: boolean
+    required: true
+    description: Enable/disable bonus for the session
+responses:
+  200:
+    description: Session bonus settings updated successfully
+  404:
+    description: Session not found

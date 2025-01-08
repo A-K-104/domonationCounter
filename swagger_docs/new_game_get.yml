@@ -1,0 +1,18 @@
+tags:
+  - Game Management
+summary: View new game creation page
+parameters:
+  - name: id
+    in: query
+    type: integer
+    required: true
+    description: Game session ID
+responses:
+  200:
+    description: Returns the new game creation page
+    content:
+      text/html:
+        schema:
+          type: string
+  302:
+    description: Redirects to home if session not found

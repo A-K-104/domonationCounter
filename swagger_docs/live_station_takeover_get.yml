@@ -1,0 +1,26 @@
+tags:
+  - Station Management
+summary: Record a station takeover
+parameters:
+  - name: session-id
+    in: query
+    type: integer
+    required: true
+    description: Game session ID
+  - name: station-id
+    in: query
+    type: integer
+    required: true
+    description: Station ID
+  - name: team-id
+    in: query
+    type: integer
+    required: true
+    description: Team ID taking over the station
+responses:
+  200:
+    description: Takeover recorded successfully
+  302:
+    description: Redirects back to live station page
+  404:
+    description: Session, station, or team not found

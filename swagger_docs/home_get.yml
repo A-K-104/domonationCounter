@@ -1,0 +1,10 @@
+tags:
+  - Game Sessions
+summary: Display the home page
+responses:
+  200:
+    description: Returns the home page with game session form
+    content:
+      text/html:
+        schema:
+          type: string

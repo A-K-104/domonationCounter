@@ -1,0 +1,16 @@
+tags:
+  - Game Management
+summary: Create a new game
+parameters:
+  - name: id
+    in: query
+    type: integer
+    required: true
+    description: Game session ID
+responses:
+  200:
+    description: Game created successfully
+  302:
+    description: Redirects to game management page
+  404:
+    description: Session not found

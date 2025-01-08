@@ -1,0 +1,21 @@
+tags:
+  - Station Management
+summary: Remove a station
+parameters:
+  - name: id
+    in: query
+    type: integer
+    required: true
+    description: Game session ID
+  - name: stationId
+    in: query
+    type: integer
+    required: true
+    description: ID of station to remove
+responses:
+  200:
+    description: Station removed successfully
+  302:
+    description: Redirects to stations page
+  404:
+    description: Session or station not found

@@ -1,0 +1,21 @@
+tags:
+  - Game History
+summary: Recalculate old game scores
+parameters:
+  - name: id
+    in: query
+    type: integer
+    required: true
+    description: Game session ID
+  - name: gameId
+    in: query
+    type: integer
+    required: true
+    description: Game ID to recalculate
+responses:
+  200:
+    description: Game scores recalculated successfully
+  302:
+    description: Redirects to old games page
+  404:
+    description: Session or game not found

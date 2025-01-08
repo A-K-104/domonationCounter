@@ -1,0 +1,10 @@
+tags:
+  - Navigation
+summary: Display game entry page
+responses:
+  200:
+    description: Returns the game entry page
+    content:
+      text/html:
+        schema:
+          type: string

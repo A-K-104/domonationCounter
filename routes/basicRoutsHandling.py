@@ -2,6 +2,7 @@ import constance
 from datetime import datetime
 from flask import Blueprint, render_template, request
 from werkzeug.utils import redirect
+from flasgger import swag_from
 
 from classes.database.GameSession import GameSession
 from classes.database.Games import Games
@@ -15,11 +16,14 @@ db = constance.db
 
 
 @basic_routs_handling.route('/', methods=['GET', 'POST'])
+@swag_from('../swagger_docs/base_get.yml', methods=['GET'])
 def baseRoute():
     return redirect("/home")
 
 
 @basic_routs_handling.route('/home', methods=['GET', 'POST'])
+@swag_from('../swagger_docs/home_get.yml', methods=['GET'])
+@swag_from('../swagger_docs/home_post.yml', methods=['POST'])
 def home():
     game_session_name = None
     method = 'create'
@@ -50,6 +54,7 @@ def home():
 
 
 @basic_routs_handling.route('/enterPage', methods=['GET', 'POST'])
+@swag_from('../swagger_docs/enter_page_get.yml', methods=['GET'])
 def game_pome_page():
     if request.args.__contains__("messages"):
         return render_template("enterPage.html", messages=request.args.get("messages"))
@@ -57,6 +62,7 @@ def game_pome_page():
 
 
 @basic_routs_handling.route('/games-menu', methods=['GET', 'POST'])
+@swag_from('../swagger_docs/games_menu_get.yml', methods=['GET'])
 def games_menu():
     if not request.args.__contains__('id') or \
             db.session.query(GameSession).filter_by(id=request.args.get("id")).first() is None:
@@ -66,6 +72,7 @@ def games_menu():
 
 
 @basic_routs_handling.route('/update-session-bonus/<sessionId>', methods=['POST'])
+@swag_from('../swagger_docs/update_session_bonus_post.yml', methods=['POST'])
 def update_session_bonus(sessionId):
     game_session = db.session.query(GameSession).filter_by(id=sessionId).first()
     game_session.bonus_minimum_hold = request.json['bonus_minimum_hold']
@@ -75,6 +82,8 @@ def update_session_bonus(sessionId):
 
 
 @basic_routs_handling.route('/teams', methods=['GET', 'POST'])
+@swag_from('../swagger_docs/teams_get.yml', methods=['GET'])
+@swag_from('../swagger_docs/teams_post.yml', methods=['POST'])
 def teams_handler():
     if not request.args.__contains__('id') or \
             db.session.query(GameSession).filter_by(id=request.args.get("id")).first() is None:
@@ -106,6 +115,8 @@ def teams_handler():
 
 
 @basic_routs_handling.route('/log_to_game', methods=['GET', 'POST'])
+@swag_from('../swagger_docs/log_to_game_get.yml', methods=['GET'])
+@swag_from('../swagger_docs/log_to_game_post.yml', methods=['POST'])
 def log_to_game():
     if request.method == "POST":
         game = Games.query.get(request.form["game_id"])
@@ -119,6 +130,7 @@ def log_to_game():
 
 
 @basic_routs_handling.route('/old-games', methods=['GET', 'POST'])
+@swag_from('../swagger_docs/old_games_get.yml', methods=['GET'])
 def old_games():
     if not request.args.__contains__('id'):
         return redirect("/")
@@ -141,6 +153,7 @@ def old_games():
 
 
 @basic_routs_handling.route('/old-games/re-calc', methods=['GET', 'POST'])
+@swag_from('../swagger_docs/old_games_recalc_get.yml', methods=['GET'])
 def re_calc_game():
     if not request.args.__contains__('game-id') or not request.args.__contains__('id'):
         return redirect("/")
@@ -157,6 +170,8 @@ def re_calc_game():
 
 
 @basic_routs_handling.route('/stations', methods=['GET', 'POST'])
+@swag_from('../swagger_docs/stations_get.yml', methods=['GET'])
+@swag_from('../swagger_docs/stations_post.yml', methods=['POST'])
 def stations():
     if not request.args.__contains__('id') or \
             db.session.query(GameSession).filter_by(id=request.args.get("id")).first() is None:
@@ -180,6 +195,7 @@ def stations():
 
 
 @basic_routs_handling.route('/stations/remove', methods=['POST', 'GET'])
+@swag_from('../swagger_docs/stations_remove_get.yml', methods=['GET'])
 def remove_station():
     if not request.args.__contains__('id') or \
             db.session.query(GameSession).filter_by(id=request.args["id"]).first() is None:
@@ -195,6 +211,7 @@ def remove_station():
 
 
 @basic_routs_handling.route('/stations/edit', methods=['POST'])
+@swag_from('../swagger_docs/stations_edit_post.yml', methods=['POST'])
 def edit_station():
     if not request.args.__contains__('id') or \
             not request.args.__contains__('stationId') or \
@@ -214,6 +231,8 @@ def edit_station():
 
 
 @basic_routs_handling.route('/live-game', methods=['GET', 'POST'])
+@swag_from('../swagger_docs/live_game_get.yml', methods=['GET'])
+@swag_from('../swagger_docs/live_game_post.yml', methods=['POST'])
 def live_game():
     message = ""
     if not request.args.__contains__("session-id") or \
@@ -225,6 +244,7 @@ def live_game():
 
 
 @basic_routs_handling.route('/live-station', methods=['GET'])
+@swag_from('../swagger_docs/live_station_get.yml', methods=['GET'])
 def live_station():
     game_id, game_session = get_game_id_from_re(request)
     station: Stations = db.session.query(Stations).filter_by(id=request.args["station-id"]).first()
@@ -250,6 +270,7 @@ def live_station():
 
 
 @basic_routs_handling.route('/live-station/takeover', methods=['GET'])
+@swag_from('../swagger_docs/live_station_takeover_get.yml', methods=['GET'])
 def live_station1():
     game_id, game_session = get_game_id_from_re(request)
 
@@ -265,6 +286,8 @@ def live_station1():
 
 
 @basic_routs_handling.route('/new-game', methods=['GET', 'POST'])
+@swag_from('../swagger_docs/new_game_get.yml', methods=['GET'])
+@swag_from('../swagger_docs/new_game_post.yml', methods=['POST'])
 def new_game():
     if not request.args.__contains__('id') or \
             db.session.query(GameSession).filter_by(id=request.args.get("id")).first() is None:
@@ -279,6 +302,7 @@ def new_game():
 
 
 @basic_routs_handling.route('/run-game', methods=['GET', 'POST'])
+@swag_from('../swagger_docs/run_game_get.yml', methods=['GET'])
 def running_game_manage():
     if not request.args.__contains__('id') or \
             db.session.query(GameSession).filter_by(id=request.args.get("id")).first() is None:
@@ -294,6 +318,7 @@ def running_game_manage():
 
 
 @basic_routs_handling.route('/run-game/stop', methods=['GET', 'POST'])
+@swag_from('../swagger_docs/run_game_stop_get.yml', methods=['GET'])
 def running_game_stop():
     if not request.args.__contains__('id') or \
             db.session.query(GameSession).filter_by(id=request.args.get("id")).first() is None:
@@ -307,6 +332,7 @@ def running_game_stop():
 
 
 @basic_routs_handling.route('/run-game/get-score', methods=['GET', 'POST'])
+@swag_from('../swagger_docs/run_game_get_score_get.yml', methods=['GET'])
 def running_game_get_live():
     if not request.args.__contains__('id') or \
             db.session.query(GameSession).filter_by(id=request.args.get("id")).first() is None:
@@ -319,6 +345,7 @@ def running_game_get_live():
 
 
 @basic_routs_handling.route('/enter-to-session', methods=['GET', 'POST'])
+@swag_from('../swagger_docs/enter_to_session_get.yml', methods=['GET'])
 def enter_to_session():
     if not request.form.__contains__('gameSessionId') or \
             db.session.query(GameSession).filter_by(id=request.form["gameSessionId"]).first() is None:
@@ -328,6 +355,7 @@ def enter_to_session():
 
 
 @basic_routs_handling.route('/game-is-alive', methods=['GET'])
+@swag_from('../swagger_docs/game_is_alive_get.yml', methods=['GET'])
 def game_is_alive() -> (str, int):
     if not request.args.__contains__("session-id") or not request.args.__contains__("station-id"):
         return "false", 400

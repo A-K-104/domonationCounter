@@ -1,0 +1,21 @@
+tags:
+  - Game Sessions
+summary: Create or join a game session
+parameters:
+  - name: gameSessionName
+    in: formData
+    type: string
+    required: true
+    description: Name of the game session to create or join
+  - name: create
+    in: formData
+    type: string
+    required: false
+    description: Present if creating a new session
+responses:
+  200:
+    description: Game session created or joined successfully
+  302:
+    description: Redirects to appropriate game page
+  400:
+    description: Invalid input parameters

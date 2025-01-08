@@ -1,0 +1,18 @@
+tags:
+  - Game Management
+summary: View game log page
+parameters:
+  - name: id
+    in: query
+    type: integer
+    required: true
+    description: Game session ID
+responses:
+  200:
+    description: Returns the game log page
+    content:
+      text/html:
+        schema:
+          type: string
+  302:
+    description: Redirects to home if session not found

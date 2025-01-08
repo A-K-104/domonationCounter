@@ -1,0 +1,25 @@
+tags:
+  - Game Management
+summary: Get current game scores
+parameters:
+  - name: session-id
+    in: query
+    type: integer
+    required: true
+    description: Game session ID
+responses:
+  200:
+    description: Returns current game scores
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            scores:
+              type: object
+              description: Team scores mapped by team ID
+            message:
+              type: string
+              description: Status message
+  404:
+    description: Session not found

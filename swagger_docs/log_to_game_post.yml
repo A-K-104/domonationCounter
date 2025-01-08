@@ -1,0 +1,21 @@
+tags:
+  - Game Management
+summary: Log into a game
+parameters:
+  - name: id
+    in: query
+    type: integer
+    required: true
+    description: Game session ID
+  - name: gameId
+    in: formData
+    type: integer
+    required: true
+    description: Game ID to log into
+responses:
+  200:
+    description: Successfully logged into game
+  302:
+    description: Redirects to appropriate game page
+  404:
+    description: Session or game not found
