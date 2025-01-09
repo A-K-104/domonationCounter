@@ -1,5 +1,5 @@
-# Use Python 3.8 slim image as base
-FROM python:3.8-slim
+# Use Python 3.12 slim image as base
+FROM python:3.12-slim
 
 # Set working directory in container
 WORKDIR /app
@@ -17,11 +17,11 @@ RUN curl -sSL https://install.python-poetry.org | python3 - && \
     ln -s /opt/poetry/bin/poetry && \
     poetry config virtualenvs.create false
 
-# Copy Poetry configuration files
-COPY pyproject.toml poetry.lock* ./
+# Copy only the files needed for installing dependencies
+COPY pyproject.toml poetry.lock ./
 
 # Install dependencies
-RUN poetry install --no-interaction --no-ansi --no-root
+RUN poetry install --no-interaction --no-root
 
 # Copy the rest of the application
 COPY . .
@@ -29,15 +29,18 @@ COPY . .
 # Install the project
 RUN poetry install --no-interaction
 
-# Create logs directory and set permissions
-RUN mkdir -p /app/logs && \
-    chmod 777 /app/logs
+# Create necessary directories and set permissions
+RUN mkdir -p /app/logs /app/instance && \
+    chmod 777 /app/logs /app/instance
 
 # Expose port 5000
 EXPOSE 5000
 
 # Set environment variables
-ENV FLASK_ENV=production
+ENV FLASK_ENV=development
+ENV FLASK_APP=app.py
+ENV FLASK_DEBUG=1
+ENV PYTHONPATH=/app
 
 # Run the application
-CMD ["poetry", "run", "python", "app.py"]
+CMD ["poetry", "run", "flask", "run", "--host=0.0.0.0", "--debug"]

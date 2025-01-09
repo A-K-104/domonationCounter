@@ -7,11 +7,18 @@ services:
       - "5000:5000"
     environment:
       - FLASK_ENV=development
+      - FLASK_APP=app.py
+      - FLASK_DEBUG=1
     volumes:
       - .:/app
       - sqlite_data:/app/instance
       - log_data:/app/logs
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   db-viewer:
     image: coleifer/sqlite-web
@@ -22,6 +29,9 @@ services:
     environment:
       - SQLITE_DATABASE=/data/db/gameData.db
     restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
 
 volumes:
   sqlite_data:
