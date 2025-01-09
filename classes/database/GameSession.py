@@ -1,27 +1,25 @@
 from datetime import datetime
 from flask import session
-import constance
-
-db = constance.db
+from classes.database.db import db
 
 
 class GameSession(db.Model):
-    # to init db in terminal type: python ->from app import db->db.create_all()-> exit(). and you are set!
+    __tablename__ = 'game_session'
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
     active = db.Column(db.Boolean(), default=False, nullable=False)
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
     bonus_minimum_hold = db.Column(db.Integer(), default=20, nullable=False)
 
-    games = db.relationship("Games", backref="GameSession", lazy=True)
-    teams = db.relationship("Teams", backref="GameSession", lazy=True)
-    stations = db.relationship("Stations", backref="GameSession", lazy=True)
+    # Define relationships with lazy='dynamic' for better query control
+    games = db.relationship('Games', backref=db.backref('session_ref', lazy=True), lazy='dynamic')
+    teams = db.relationship('Teams', backref=db.backref('session_ref', lazy=True), lazy='dynamic')
+    stations = db.relationship('Stations', backref=db.backref('session_ref', lazy=True), lazy='dynamic')
 
     def __repr__(self):
         return '<Name %r>' % self.id
 
 
 def checkIfInSession():
-    if not ('email' in session):
-        return False
-    return True
+    return session.__contains__('gameSessionName')

@@ -1,26 +1,17 @@
 from datetime import datetime
-from flask import session
-import constance
-from classes.database.GameSession import GameSession
-
-db = constance.db
+from classes.database.db import db
 
 
 class Teams(db.Model):
-    # to init db in terminal type: python ->from app import db->db.create_all()-> exit(). and you are set!
+    __tablename__ = 'teams'
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
     color = db.Column(db.String(200), nullable=False)
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
+    session = db.Column(db.Integer, db.ForeignKey('game_session.id'), nullable=False)
 
-    session = db.Column(db.Integer, db.ForeignKey(GameSession.id))
-
+    take_overs = db.relationship('StationsTakeOvers', backref='team', lazy=True)
 
     def __repr__(self):
         return '<Name %r>' % self.id
-
-
-def checkIfInSession():
-    if not ('email' in session):
-        return False
-    return True
