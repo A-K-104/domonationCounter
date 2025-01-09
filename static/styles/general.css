@@ -115,3 +115,14 @@ label {
     letter-spacing: 0.5px;
     padding-right: 1em;
 }
+
+.login-field {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.login-field button {
+    margin-left: 10px;
+}
