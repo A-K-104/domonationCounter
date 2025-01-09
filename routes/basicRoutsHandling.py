@@ -294,6 +294,7 @@ def stations():
                     name=request.form["stations_name"],
                     point=request.form["stations_point"],
                     bonus_time_seconds=request.form["bonus_time_seconds"],
+                    session=request.args.get("id"),
                 )
                 game_session.stations.append(new_stations)
                 db.session.commit()
