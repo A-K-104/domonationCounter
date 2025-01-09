@@ -1,26 +1,24 @@
+"""Games database model."""
 from datetime import datetime
+
 from classes.database.db import db
-import constance
-from classes.database.GameSession import GameSession
+
 
 class Games(db.Model):
-    __tablename__ = 'games'
+    """Games database model."""
 
-    # to init db in terminal type: python ->from app import db->db.create_all()-> exit(). and you are set!
+    __tablename__ = "games"
     id = db.Column(db.Integer, primary_key=True)
-    date_created = db.Column(db.DateTime, default=datetime.utcnow)
-    date_ended = db.Column(db.DateTime, nullable=True)
-    active = db.Column(db.Boolean(), default=False, nullable=False)
-    game_score = db.Column(db.JSON, default={})
-    session = db.Column(db.Integer, db.ForeignKey('game_session.id'), nullable=False)
+    session = db.Column(db.Integer, db.ForeignKey("game_session.id"), nullable=False)
+    active = db.Column(db.Boolean, default=True)
+    start_time = db.Column(db.DateTime, default=datetime.now)
 
-    stations_take_overs = db.relationship('StationsTakeOvers', backref='game', lazy=True)
+    def __init__(self, session: int, active: bool = True) -> None:
+        """Initialize a new game."""
+        self.session = session
+        self.active = active
+        self.start_time = datetime.now()
 
-    def __repr__(self):
-        return '<Name %r>' % self.id
-
-
-def checkIfInSession():
-    if not ('email' in session):
-        return False
-    return True
+    def __repr__(self) -> str:
+        """Return string representation of the game."""
+        return f"<Game {self.id}>"
