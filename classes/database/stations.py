@@ -23,11 +23,14 @@ class Stations(db.Model):
         cascade="all, delete-orphan",
     )
 
-    def __init__(self, name: str, point: int, bonus_time_seconds: int) -> None:
+    def __init__(
+        self, name: str, point: int, bonus_time_seconds: int, session: int
+    ) -> None:
         """Initialize a new station."""
         self.name = name
         self.point = point
         self.bonus_time_seconds = bonus_time_seconds
+        self.session = session
 
     def __repr__(self) -> str:
         """Return string representation of the station."""
