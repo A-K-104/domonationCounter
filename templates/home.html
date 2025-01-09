@@ -27,10 +27,10 @@
                     <p>{{game.name}}</p>
                 </td>
                 <td>
-                        <button onclick="redirectPage('/live-game?session-id={{game.id}}')">enter game</button>
+                    <button onclick="redirectPage('/live-game?session-id={{game.id}}')">enter game</button>
                 </td>
                 <td>
-                        <button onclick="redirectPage('/games-menu?id={{game.id}}')">manage session</button>
+                    <button onclick="redirectPage('/games-menu?id={{game.id}}')">manage session</button>
                 </td>
                 <td>
                     <form action="/home" method="post">
@@ -38,7 +38,6 @@
                     </form>
                 </td>
             </tr>
-
             {%endfor%}
         </table>
     </div>
@@ -47,21 +46,21 @@
 <div class="section">
     <form class="section" action="/home" method="post">
         <div class="container">
-            <h3 class="title"> Create game session</h3>
+            <h3 class="title">Create game session</h3>
             <div class="login-field">
-                <label class="field-label"><b>game session name</b></label>
-                <input name="gameSessionName" type="text" value="{{gameSessionName.name}}" autocomplete="off" required>
+                <input name="gameSessionName" type="text" placeholder="Enter session name" autocomplete="off" required>
+                <button name="create" value="create">Create</button>
             </div>
-            <button name="{{method}}" value="{{gameSessionName.id}}">create</button>
         </div>
     </form>
 </div>
-</body>
+
 <script>
     function redirectPage(path) {
-        location.assign(path)
+        window.location.href = path;
     }
 </script>
+
 {% endblock %}
 
 </html>
