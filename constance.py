@@ -1,73 +1,45 @@
-from flask import Flask
-from flask_session import Session
-from flask_sqlalchemy import SQLAlchemy
-from flasgger import Swagger
+"""
+Global constants and configurations for the Domination Counter application.
+"""
+import os
 
-app = Flask(__name__)
-app.config['SECRET_KEY'] = 'LJADLKCDDFD425344dfhW'
-app.config["SESSION_PERMANENT"] = False
-app.config['SESSION_TYPE'] = 'filesystem'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///gameData.db'
-app.config['SQLALCHEMY_BINDS'] = {'stations': 'sqlite:///gameData.db', 'games': 'sqlite:///gameData.db'}
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# Get the absolute path to the instance folder
+INSTANCE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), 'instance'))
 
-# Swagger configuration
+# In Docker, the database file should be in the instance folder which is mounted as a volume
+DB_PATH = os.path.join(INSTANCE_PATH, "gameData.db")
+DB_URI = f'sqlite:///{DB_PATH}'
+
+# Default configuration
+default_config = {
+    'SECRET_KEY': 'LJADLKCDDFD425344dfhW',
+    'SESSION_PERMANENT': False,
+    'SESSION_TYPE': 'filesystem',
+    'SQLALCHEMY_DATABASE_URI': DB_URI,
+    'SQLALCHEMY_BINDS': {
+        'stations': DB_URI,
+        'games': DB_URI
+    },
+    'SQLALCHEMY_TRACK_MODIFICATIONS': False
+}
+
+# Swagger configuration template
 swagger_template = {
     "swagger": "2.0",
     "info": {
-        "title": "Domination Counter API",
-        "description": "API documentation for the Domination Counter game management system",
-        "version": "1.0",
-        "contact": {
-            "name": "Domination Counter Support",
-        }
+        "title": "Domonation Counter API",
+        "description": "API for managing game sessions and scoring",
+        "version": "1.0.0"
     },
-    "tags": [
-        {
-            "name": "Game Sessions",
-            "description": "Game session management operations"
-        },
-        {
-            "name": "Game Management",
-            "description": "Operations for managing active games"
-        },
-        {
-            "name": "Station Management",
-            "description": "Operations for managing game stations"
-        },
-        {
-            "name": "Team Management",
-            "description": "Operations for managing teams"
-        },
-        {
-            "name": "Game History",
-            "description": "Operations for viewing and managing past games"
-        },
-        {
-            "name": "Navigation",
-            "description": "Basic navigation endpoints"
-        }
+    "basePath": "/",
+    "schemes": [
+        "http",
+        "https"
     ],
-    "schemes": ["http", "https"]
-}
-
-swagger_config = {
-    "headers": [],
-    "specs": [
-        {
-            "endpoint": 'apispec',
-            "route": '/apispec.json',
-            "rule_filter": lambda rule: True,
-            "model_filter": lambda tag: True,
-        }
+    "consumes": [
+        "application/json"
     ],
-    "static_url_path": "/flasgger_static",
-    "swagger_ui": True,
-    "specs_route": "/apidocs/",
-    "title": "Domination Counter API Documentation"
+    "produces": [
+        "application/json"
+    ]
 }
-
-swagger = Swagger(app, template=swagger_template, config=swagger_config)
-sess = Session(app)
-db = SQLAlchemy(app)
-#  sudo gunicorn3 -w 4 --reload -b localhost:5000 denominationCounter:app
