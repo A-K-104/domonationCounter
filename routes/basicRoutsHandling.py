@@ -1,10 +1,16 @@
 """Basic route handling for the application."""
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import Blueprint, render_template, request, redirect
 from flasgger import swag_from
 
-from classes.database.GameSession import GameSession
+from classes.database.models import (
+    GameSession,
+    Games,
+    Stations,
+    Teams,
+    StationsTakeOvers,
+)
 from classes.database.db import db
 
 basic_routs_handling = Blueprint("basic_routs_handling", __name__)
@@ -90,60 +96,58 @@ def update_session_bonus(sessionId):
 @swag_from("../swagger_docs/teams_get.yml", methods=["GET"])
 @swag_from("../swagger_docs/teams_post.yml", methods=["POST"])
 def teams_handler():
-    if (
-        not request.args.__contains__("id")
-        or db.session.query(GameSession).filter_by(id=request.args.get("id")).first()
-        is None
-    ):
+    """Handle team management."""
+    session_id = request.args.get("id") or request.form.get("session_id")
+    if not session_id:
         return redirect("/")
-    game_session = (
-        db.session.query(GameSession).filter_by(id=request.args.get("id")).first()
-    )
+
+    game_session = GameSession.query.filter_by(id=session_id).first()
+    if game_session is None:
+        return redirect("/")
+
     message = ""
     if request.method == "POST":
-        if request.form.__contains__("team_name") and request.form.__contains__(
-            "team_color"
-        ):
-            if (
-                db.session.query(GameSession)
-                .filter_by(
-                    name=request.form["team_name"], session=request.args.get("id")
-                )
-                .first()
-                is None
-            ):
-                if (
-                    db.session.query(GameSession)
-                    .filter_by(
-                        color=request.form["team_color"], session=request.args.get("id")
-                    )
-                    .first()
-                    is None
-                ):
-                    new_teams = GameSession(
-                        name=request.form["team_name"], color=request.form["team_color"]
-                    )
-                    game_session.teams.append(new_teams)
-                    db.session.commit()
-                else:
-                    message = "color already exist"
-            else:
+        if request.form.get("team_name") and request.form.get("team_color"):
+            # Check if team name exists
+            existing_team = Teams.query.filter_by(
+                name=request.form["team_name"], session=game_session.id
+            ).first()
+
+            if existing_team:
                 message = "name already exist"
-        elif request.form.__contains__("removeTeamId"):
-            team = GameSession.query.get(request.form["removeTeamId"])
-            if team is not None:
+            else:
+                # Check if color exists
+                existing_color = Teams.query.filter_by(
+                    color=request.form["team_color"], session=game_session.id
+                ).first()
+
+                if existing_color:
+                    message = "color already exist"
+                else:
+                    # Create new team
+                    new_team = Teams(
+                        name=request.form["team_name"],
+                        color=request.form["team_color"],
+                        session=game_session.id,
+                    )
+                    db.session.add(new_team)
+                    db.session.commit()
+
+        elif request.form.get("removeTeamId"):
+            team = Teams.query.get(request.form["removeTeamId"])
+            if (
+                team and team.session == game_session.id
+            ):  # Verify team belongs to session
                 db.session.delete(team)
                 db.session.commit()
         else:
-            message = "failed to get par"
-    session_teams = (
-        db.session.query(GameSession).filter_by(session=request.args.get("id")).all()
-    )
+            message = "Missing required fields"
+
     return render_template(
         "teams.html",
-        teams=list(session_teams),
+        teams=list(game_session.teams),
         message=message,
-        id=request.args.get("id"),
+        id=game_session.id,
     )
 
 
@@ -166,30 +170,91 @@ def log_to_game():
 @swag_from("../swagger_docs/old_games_get.yml", methods=["GET"])
 def old_games():
     """Old games page route."""
-    game_sessions = GameSession.query.all()
-    return render_template("old_games.html", game_sessions=game_sessions)
+    session_id = request.args.get("id")
+    if not session_id:
+        game_sessions = GameSession.query.all()
+        return render_template("old_games.html", game_sessions=game_sessions)
+
+    game_session = GameSession.query.filter_by(id=session_id).first()
+    if not game_session:
+        return redirect("/old-games")
+
+    games = Games.query.filter_by(active=False, session=session_id).all()
+    games_score = []
+
+    for game in games:
+        score, last_teams, team_bonus = calc_game(game_session, game)
+        score_dict = {}
+        for team in game_session.teams:
+            team_score = score.get(team.id, 0)
+            score_dict[team.name] = {"score": team_score, "color": team.color}
+
+        last_teams_dict = {}
+        for station_id, station_data in last_teams.items():
+            team = next(
+                (t for t in game_session.teams if t.id == station_data.get("team")),
+                None,
+            )
+            last_teams_dict[station_id] = {
+                "name": station_data.get("name"),
+                "teamName": team.name if team else "N/A",
+                "color": team.color if team else "#000000",
+            }
+
+        games_score.append(
+            {
+                "score": score_dict,
+                "lastTeams": last_teams_dict,
+                "id": game.id,
+                "team_bonus": team_bonus,
+            }
+        )
+
+    return render_template(
+        "old_games.html",
+        game_sessions=GameSession.query.all(),
+        gamesScore=games_score,
+        id=session_id,
+        sessionId=session_id,
+    )
 
 
 @basic_routs_handling.route("/old-games/re-calc", methods=["GET", "POST"])
 @swag_from("../swagger_docs/old_games_recalc_get.yml", methods=["GET"])
 def re_calc_game():
+    """Recalculate game scores."""
     if not request.args.__contains__("game-id") or not request.args.__contains__("id"):
         return redirect("/")
 
-    game: GameSession = (
-        db.session.query(GameSession).filter_by(id=request.args["game-id"]).first()
-    )
-    game_session: GameSession = (
-        db.session.query(GameSession).filter_by(id=request.args.get("id")).first()
-    )
+    game = Games.query.get(request.args["game-id"])
+    game_session = GameSession.query.filter_by(id=request.args["id"]).first()
+
     if game is None or game_session is None:
         return redirect("/")
 
-    game_res, last_teams, team_bonus = calc_game(game_session, game)
-    game_res = convert_team_id_to_team_name_dict(game_res, game_session.teams)
+    score, last_teams, team_bonus = calc_game(game_session, game)
+
+    # Convert score to use team names instead of IDs
+    score_dict = {}
+    for team in game_session.teams:
+        team_score = score.get(team.id, 0)
+        score_dict[team.name] = {"score": team_score, "color": team.color}
+
+    # Convert last teams to use team names
+    last_teams_dict = {}
+    for station_id, station_data in last_teams.items():
+        team = next(
+            (t for t in game_session.teams if t.id == station_data.get("team")), None
+        )
+        last_teams_dict[station_id] = {
+            "name": station_data.get("name"),
+            "teamName": team.name if team else "N/A",
+            "color": team.color if team else "#000000",
+        }
+
     game.game_score = {
-        "score": game_res,
-        "lastTeams": last_teams,
+        "score": score_dict,
+        "lastTeams": last_teams_dict,
         "team_bonus": team_bonus,
         "id": game.id,
     }
@@ -218,14 +283,14 @@ def stations():
             "stations_point"
         ):
             if (
-                db.session.query(GameSession)
+                db.session.query(Stations)
                 .filter_by(
                     name=request.form["stations_name"], session=request.args.get("id")
                 )
                 .first()
                 is None
             ):
-                new_stations = GameSession(
+                new_stations = Stations(
                     name=request.form["stations_name"],
                     point=request.form["stations_point"],
                     bonus_time_seconds=request.form["bonus_time_seconds"],
@@ -236,12 +301,12 @@ def stations():
                 message = "name already exist"
         else:
             message = "failed to get par"
-    session_station = (
-        db.session.query(GameSession).filter_by(session=request.args.get("id")).all()
+    session_stations = (
+        db.session.query(Stations).filter_by(session=request.args.get("id")).all()
     )
     return render_template(
         "stations.html",
-        stations=list(session_station),
+        stations=list(session_stations),
         message=message,
         id=request.args.get("id"),
     )
@@ -321,18 +386,25 @@ def live_game():
 @swag_from("../swagger_docs/live_station_get.yml", methods=["GET"])
 def live_station():
     game_id, game_session = get_game_id_from_re(request)
-    station: GameSession = (
-        db.session.query(GameSession).filter_by(id=request.args["station-id"]).first()
+    station: Stations = (
+        db.session.query(Stations).filter_by(id=request.args["station-id"]).first()
     )
     if station is None or game_session is None:
         return redirect("/")
 
     connected = True
+    # Ensure last_ping is timezone-aware
+    last_ping = (
+        station.last_ping
+        if station.last_ping.tzinfo
+        else station.last_ping.replace(tzinfo=timezone.utc)
+    )
     if not (
-        station.connected and (datetime.utcnow() - station.last_ping).seconds / 60 < 2
+        station.connected
+        and (datetime.now(timezone.utc) - last_ping).total_seconds() / 60 < 2
     ) or request.args.__contains__("alerted"):
         station.connected = True
-        station.last_ping = datetime.utcnow()
+        station.last_ping = datetime.now(timezone.utc)
         db.session.commit()
         connected = False
 
@@ -340,7 +412,7 @@ def live_station():
     if game_id is not None:
         team_in_con_id = int(team_in_control(game_id, int(request.args["station-id"])))
     team_in_con = (
-        db.session.query(GameSession)
+        db.session.query(Teams)
         .filter_by(id=team_in_con_id, session=game_session.id)
         .first()
     )
@@ -361,16 +433,26 @@ def live_station():
 def live_station1():
     game_id, game_session = get_game_id_from_re(request)
 
-    if game_id is not None:
-        if not request.args.__contains__("team-id"):
-            return redirect("/")
-        game = db.session.query(GameSession).filter_by(id=game_id.id).first()
-        game.stationsTakeOvers.append(
-            GameSession(
-                stationId=request.args["station-id"], teamId=request.args["team-id"]
-            )
+    if game_id is None or game_session is None:
+        return redirect("/games-menu?id=" + request.args.get("session-id", ""))
+
+    if not request.args.__contains__("team-id") or not request.args.__contains__(
+        "station-id"
+    ):
+        return redirect("/games-menu?id=" + request.args.get("session-id", ""))
+
+    game = Games.query.get(game_id.id)
+    if game:
+        # Create takeover with current UTC time
+        take_over = StationsTakeOvers(
+            station_id=request.args["station-id"],
+            team_id=request.args["team-id"],
+            game_id=game.id,
+            date_created=datetime.now(timezone.utc),
         )
+        db.session.add(take_over)
         db.session.commit()
+
     return redirect(
         f'/live-station?session-id={game_session.id}'
         f'&station-id={request.args["station-id"]}&alerted=true'
@@ -381,20 +463,19 @@ def live_station1():
 @swag_from("../swagger_docs/new_game_get.yml", methods=["GET"])
 @swag_from("../swagger_docs/new_game_post.yml", methods=["POST"])
 def new_game():
-    if (
-        not request.args.__contains__("id")
-        or db.session.query(GameSession).filter_by(id=request.args.get("id")).first()
-        is None
-    ):
+    if not request.args.__contains__("id"):
         return redirect("/")
 
-    game_session = (
-        db.session.query(GameSession).filter_by(id=request.args.get("id")).first()
-    )
+    game_session = GameSession.query.filter_by(id=request.args.get("id")).first()
+    if game_session is None:
+        return redirect("/")
+
     for game in game_session.games:
         if game.active:
             stop_running_game(game, game_session)
-    game_session.games.append(GameSession(active=True))
+
+    new_game = Games(active=True, session=game_session.id)
+    game_session.games.append(new_game)
     db.session.commit()
     return redirect(f"/run-game?id={game_session.id}")
 
@@ -402,21 +483,20 @@ def new_game():
 @basic_routs_handling.route("/run-game", methods=["GET", "POST"])
 @swag_from("../swagger_docs/run_game_get.yml", methods=["GET"])
 def running_game_manage():
-    if (
-        not request.args.__contains__("id")
-        or db.session.query(GameSession).filter_by(id=request.args.get("id")).first()
-        is None
-    ):
+    if not request.args.__contains__("id"):
         return redirect("/")
 
-    game_session = (
-        db.session.query(GameSession).filter_by(id=request.args.get("id")).first()
-    )
+    game_session = GameSession.query.filter_by(id=request.args.get("id")).first()
+    if game_session is None:
+        return redirect("/")
+
     running_game = multi_games_running(game_session.games)
     if running_game is None:
-        return "error multiply games are running or none"
+        return redirect(f"/games-menu?id={game_session.id}")
+
     if request.method == "POST":
         stop_running_game(running_game, game_session)
+
     return render_template(
         "manageRunningGame.html",
         teams=game_session.teams,
@@ -459,9 +539,13 @@ def running_game_get_live():
     )
 
     calc_station_status(game_session)
-    game_score, station_score, team_bonus = calc_game(
-        game_session, game_session.games[-1], True
-    )
+
+    # Check if there are any games in the session
+    games = list(game_session.games)
+    if not games:
+        return {"status": 400, "error": "no games found in session"}, 400
+
+    game_score, station_score, team_bonus = calc_game(game_session, games[-1], True)
     return {
         "gameScore": game_score,
         "stationScore": station_score,
@@ -509,7 +593,7 @@ def game_is_alive() -> (str, int):
     if station is None or game_session is None:
         return "false", 400
 
-    station.last_ping = datetime.utcnow()
+    station.last_ping = datetime.now(timezone.utc)
     if not station.connected:
         station.connected = True
     db.session.commit()
@@ -551,14 +635,14 @@ def multi_games_running(games: list) -> None or GameSession:
 
 def team_in_control(game: GameSession, station_id: int):
     team_in = (
-        db.session.query(GameSession)
-        .filter_by(game=game.id, stationId=station_id)
-        .order_by(GameSession.date_created.desc())
+        db.session.query(StationsTakeOvers)
+        .filter_by(game_id=game.id, station_id=station_id)
+        .order_by(StationsTakeOvers.date_created.desc())
         .first()
     )
 
     if team_in is not None:
-        return team_in.teamId
+        return team_in.team_id
     return -1
 
 
@@ -574,7 +658,7 @@ def calc_game(game_session: GameSession, game: GameSession, for_running_game=Fal
 
     game_ended = game.date_ended
     if game_ended is None:
-        game_ended = datetime.utcnow()
+        game_ended = datetime.now(timezone.utc)
     if for_running_game:
         for station in game_session.stations:
             last_team_dict[station.id] = {
@@ -589,14 +673,12 @@ def calc_game(game_session: GameSession, game: GameSession, for_running_game=Fal
         sub_result, last_team = station_calc(
             game_session.teams,
             station,
-            game.stationsTakeOvers,
+            game.stations_take_overs,
             game_ended,
             game_session,
             team_bonus,
         )
-        team: GameSession = (
-            db.session.query(GameSession).filter_by(id=last_team).first()
-        )
+        team: Teams = db.session.query(Teams).filter_by(id=last_team).first()
         if team is not None:
             if for_running_game:
                 last_team_dict[station.id] = {
@@ -622,7 +704,7 @@ def calc_game(game_session: GameSession, game: GameSession, for_running_game=Fal
 def get_list_of_take_overs_per_station(station: GameSession, take_overs: list) -> list:
     new_take_over: list = []
     for take_over in take_overs:
-        if take_over.stationId == station.id:
+        if take_over.station_id == station.id:
             new_take_over.append(take_over)
     return new_take_over
 
@@ -639,21 +721,36 @@ def station_calc(
     last_take_over: datetime or None = None
     pre_team: int or None = None
     bonus_enabled: bool = False
+
+    # Ensure game_ended is timezone-aware
+    if not game_ended.tzinfo:
+        game_ended = game_ended.replace(tzinfo=timezone.utc)
+
     for team in teams:
         result[team.id] = 0
+
     take_overs = get_list_of_take_overs_per_station(station, take_overs)
     if len(take_overs) > 0:
         for take_over in take_overs:
-            if result.__contains__(take_over.teamId):
+            # Ensure take_over date is timezone-aware
+            if not take_over.date_created.tzinfo:
+                take_over.date_created = take_over.date_created.replace(
+                    tzinfo=timezone.utc
+                )
+
+            if result.__contains__(take_over.team_id):
                 if last_take_over is not None and pre_team is not None:
-                    result[pre_team] += (
-                        (take_over.date_created - last_take_over).seconds
-                        / 60
-                        * station.point
-                    )
+                    # Calculate points for previous team's control duration
+                    duration_minutes = (
+                        take_over.date_created - last_take_over
+                    ).total_seconds() / 60
+                    points = duration_minutes * station.point
+                    result[pre_team] += points
+
+                    # Calculate bonus if applicable
                     result[pre_team] += station_bonus_calc(
                         bonus_enabled,
-                        (take_over.date_created - last_take_over).seconds,
+                        int((take_over.date_created - last_take_over).total_seconds()),
                         pre_team,
                         station,
                         game_session,
@@ -661,48 +758,36 @@ def station_calc(
                         teams,
                     )
 
+                # Check if bonus should be enabled
                 if (
                     not bonus_enabled
                     and pre_team is not None
-                    and (take_over.date_created - last_take_over).seconds
+                    and (take_over.date_created - last_take_over).total_seconds()
                     >= game_session.bonus_minimum_hold
                 ):
                     bonus_enabled = True
-                last_take_over = take_over.date_created
 
-            pre_team = take_over.teamId
+                last_take_over = take_over.date_created
+            pre_team = take_over.team_id
+
+        # Calculate points for the last team's control duration
         if last_take_over is not None:
-            result[take_overs[-1].teamId] += (
-                game_ended - last_take_over
-            ).seconds / 60 * station.point + station_bonus_calc(
+            duration_minutes = (game_ended - last_take_over).total_seconds() / 60
+            points = duration_minutes * station.point
+            result[take_overs[-1].team_id] += points
+
+            # Calculate final bonus if applicable
+            result[take_overs[-1].team_id] += station_bonus_calc(
                 bonus_enabled,
-                (game_ended - last_take_over).seconds,
-                take_overs[-1].teamId,
+                int((game_ended - last_take_over).total_seconds()),
+                take_overs[-1].team_id,
                 station,
                 game_session,
                 team_bonus,
                 teams,
             )
+
     return result, pre_team
-
-
-def station_bonus_calc(
-    bonus_enabled: bool,
-    holding_time: int,
-    team_id,
-    station: GameSession,
-    game_session: GameSession,
-    team_bonus: dict,
-    session_teams: list,
-) -> int:
-    team_name = get_team_by_id(session_teams, team_id).name
-    if bonus_enabled and (holding_time >= game_session.bonus_minimum_hold):
-        if not team_bonus.get(team_name) or not team_bonus[team_name].__contains__(
-            station.name
-        ):
-            team_bonus[team_name] = (team_bonus.get(team_name) or []) + [station.name]
-            return station.bonus_time_seconds * station.point / 60
-    return 0
 
 
 def get_team_by_id(session_teams: list, team_id) -> GameSession or None:
@@ -712,38 +797,23 @@ def get_team_by_id(session_teams: list, team_id) -> GameSession or None:
     return None
 
 
-def get_game_id_from_re(game_request) -> (GameSession, GameSession) or (None, None):
-    if (
-        not game_request.args.__contains__("session-id")
-        or db.session.query(GameSession)
-        .filter_by(id=game_request.args["session-id"])
-        .first()
-        is None
-    ):
+def get_game_id_from_re(game_request):
+    """Get game ID from request."""
+    if not game_request.args.__contains__("session-id"):
         return None, None
 
-    if (
-        not game_request.args.__contains__("station-id")
-        or db.session.query(GameSession)
-        .filter_by(
-            id=game_request.args["station-id"], session=game_request.args["session-id"]
-        )
-        .first()
-        is None
-    ):
+    game_session = GameSession.query.filter_by(
+        id=game_request.args["session-id"]
+    ).first()
+    if game_session is None:
         return None, None
 
-    game_session = (
-        db.session.query(GameSession)
-        .filter_by(id=game_request.args["session-id"])
-        .first()
-    )
-    game_id = multi_games_running(game_session.games)
-    return game_id, game_session
+    running_game = multi_games_running(game_session.games)
+    return running_game, game_session
 
 
 def stop_running_game(running_game: GameSession, game_session: GameSession) -> None:
-    running_game.date_ended = datetime.utcnow()
+    running_game.date_ended = datetime.now(timezone.utc)
     game_res, last_teams, team_bonus = calc_game(game_session, running_game)
     game_res = convert_team_id_to_team_name_dict(game_res, game_session.teams)
 
@@ -773,8 +843,33 @@ def convert_team_id_to_team_name_dict(game_score: dict, teams: list) -> dict:
 def calc_station_status(game_session: GameSession):
     game_stations: list = game_session.stations
     for station in game_stations:
-        if (datetime.utcnow() - station.last_ping).seconds / 60 > 2:
+        # Ensure last_ping is timezone-aware
+        last_ping = (
+            station.last_ping
+            if station.last_ping.tzinfo
+            else station.last_ping.replace(tzinfo=timezone.utc)
+        )
+        if (datetime.now(timezone.utc) - last_ping).seconds / 60 > 2:
             station.connected = False
         else:
             station.connected = True
     db.session.commit()
+
+
+def station_bonus_calc(
+    bonus_enabled: bool,
+    holding_time: int,
+    team_id,
+    station: GameSession,
+    game_session: GameSession,
+    team_bonus: dict,
+    session_teams: list,
+) -> int:
+    team_name = get_team_by_id(session_teams, team_id).name
+    if bonus_enabled and (holding_time >= game_session.bonus_minimum_hold):
+        if not team_bonus.get(team_name) or not team_bonus[team_name].__contains__(
+            station.name
+        ):
+            team_bonus[team_name] = (team_bonus.get(team_name) or []) + [station.name]
+            return station.bonus_time_seconds * station.point / 60
+    return 0

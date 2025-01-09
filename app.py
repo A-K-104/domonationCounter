@@ -29,8 +29,11 @@ def create_app(test_config=None):
 
     # Initialize extensions
     db.init_app(app)
+
+    # Create database tables
     with app.app_context():
         db.create_all()
+
     Session(app)
     Swagger(app, template=constance.swagger_template)
 
