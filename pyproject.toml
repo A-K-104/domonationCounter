@@ -12,6 +12,8 @@ Flask = "^3.0.0"
 Flask-SQLAlchemy = "^3.0.5"
 Flask-Session = "^0.5.0"
 flasgger = "^0.9.7"
+requests = "^2.32.3"
+beautifulsoup4 = "^4.12.3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.4"
