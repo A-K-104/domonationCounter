@@ -1,0 +1,25 @@
+tags:
+  - Station Management
+summary: View live station status
+parameters:
+  - name: session-id
+    in: query
+    type: integer
+    required: true
+    description: Game session ID
+  - name: station-id
+    in: query
+    type: integer
+    required: true
+    description: Station ID
+responses:
+  200:
+    description: Returns the live station page with current status
+    content:
+      text/html:
+        schema:
+          type: string
+  302:
+    description: Redirects if session or station not found
+  404:
+    description: Session or station not found

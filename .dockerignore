@@ -21,11 +21,10 @@ wheels/
 *.egg
 
 # Virtual Environment
-.env
-.venv
-env/
 venv/
 ENV/
+env/
+.env/
 
 # IDE
 .idea/
@@ -33,12 +32,23 @@ ENV/
 *.swp
 *.swo
 
-# Ruff
-.ruff_cache/
+# Logs
+logs/
+*.log
 
-# Project specific
-/flask_session/
-/gameData.db
-/gameDatasq.db
-/logs/
-/instance/gameData.db
+# SQLite
+*.db
+instance/
+
+# Docker
+.docker/
+
+# Git
+.git/
+.gitignore
+
+# Tests
+tests/
+.pytest_cache/
+.coverage
+htmlcov/

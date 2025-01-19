@@ -1,0 +1,33 @@
+tags:
+  - Station Management
+summary: Create or update station
+parameters:
+  - name: id
+    in: query
+    type: integer
+    required: true
+    description: Game session ID
+  - name: stationName
+    in: formData
+    type: string
+    required: true
+    description: Name of the station
+  - name: stationBonus
+    in: formData
+    type: integer
+    required: true
+    description: Bonus points for controlling this station
+  - name: stationId
+    in: formData
+    type: integer
+    required: false
+    description: Station ID (if updating existing station)
+responses:
+  200:
+    description: Station created or updated successfully
+  302:
+    description: Redirects to stations page
+  400:
+    description: Invalid input parameters
+  404:
+    description: Session not found

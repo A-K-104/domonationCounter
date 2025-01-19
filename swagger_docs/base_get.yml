@@ -1,0 +1,6 @@
+tags:
+  - Navigation
+summary: Redirect to home page
+responses:
+  302:
+    description: Redirects to /home page

@@ -12,7 +12,28 @@
 <body>
 <div class="section">
     <div class="container">
-        <h3 class="title">Old games in session: {{sessionId}}</h3>
+        {% if not id %}
+        <h3 class="title">Select a Game Session</h3>
+        <div>
+            <table class="statusTable">
+                <tr>
+                    <th>Session Name</th>
+                    <th>View Games</th>
+                </tr>
+                {% for session in game_sessions %}
+                <tr>
+                    <td>{{ session.name }}</td>
+                    <td>
+                        <button onclick="redirectPage('/old-games?id={{session.id}}')">
+                            View Games
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        {% else %}
+        <h3 class="title">Old games in session: {{id}}</h3>
         <div>
             <table class="statusTable">
                 <tr>
@@ -49,18 +70,18 @@
                         {%for station in game.get("lastTeams")%}
                         <p style="color:{{game.get("lastTeams").get(station).get("color")}};">
                         {{game.get("lastTeams").get(station).get("name")}}: {{game.get("lastTeams").get(station).get("teamName")}}</p>
-
                         {%endfor%}
                     </td>
                     <td>
-                            <button onclick="redirectPage('/old-games/re-calc?id={{sessionId}}&game-id={{game.get("id")}}')">
-                                recalculate score
-                            </button>
+                        <button onclick="redirectPage('/old-games/re-calc?id={{id}}&game-id={{game.get("id")}}')">
+                            recalculate score
+                        </button>
                     </td>
                 </tr>
                 {%endfor%}
             </table>
         </div>
+        {% endif %}
     </div>
 </div>
 {{message}}
@@ -71,6 +92,4 @@
     }
 </script>
 {% endblock %}
-
-
 </html>

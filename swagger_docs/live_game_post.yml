@@ -1,0 +1,21 @@
+tags:
+  - Game Management
+summary: Update live game status
+parameters:
+  - name: session-id
+    in: query
+    type: integer
+    required: true
+    description: ID of the game session
+  - name: gameId
+    in: formData
+    type: integer
+    required: true
+    description: ID of the game to update
+responses:
+  200:
+    description: Game status updated successfully
+  302:
+    description: Redirect to appropriate page
+  404:
+    description: Game or session not found

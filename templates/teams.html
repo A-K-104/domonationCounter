@@ -14,7 +14,8 @@
 <div class="section">
     <div class="container">
         <h3 class="title">Teams page</h3>
-        <form action="/teams?id={{id}}" method="post">
+        <form method="post">
+            <input type="hidden" name="session_id" value="{{id}}">
             <div class="login-field">
                 <label class="field-label"><b>team name</b></label>
                 <input name="team_name" type="text" autocomplete="off" required>
@@ -25,8 +26,7 @@
                 <label class="field-label"><b>team color</b></label>
                 <input name="team_color" type="color" required>
             </div>
-<!--            , enter team color: <input type="color" name="team_color" required>-->
-            <button name="add_team" >enter</button>
+            <button name="add_team">enter</button>
         </form>
     </div>
 </div>
@@ -44,12 +44,12 @@
                     <p style="color:{{team.color}};">{{team.id}}</p>
                 </td>
                 <td>
-                    <p style="color:{{team.color}};">
-                        {{team.name}}</p>
+                    <p style="color:{{team.color}};">{{team.name}}</p>
                 </td>
                 <td>
-                    <form action="/teams?id={{id}}" method="post">
-                        <button name="removeTeamId"  value="{{team.id}}">remove</button>
+                    <form method="post">
+                        <input type="hidden" name="session_id" value="{{id}}">
+                        <button name="removeTeamId" value="{{team.id}}">remove</button>
                     </form>
                 </td>
             </tr>

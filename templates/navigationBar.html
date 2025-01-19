@@ -5,11 +5,13 @@
 <div class="centerNav">
     <div id="navbar" class="centerNav">
         <a href="/home" class="nav-link">Home</a>
+        {% if id %}
         <a href="/stations?id={{id}}" class="nav-link">stations</a>
         <a href="/teams?id={{id}}" class="nav-link">teams</a>
         <a href="/old-games?id={{id}}" class="nav-link">old-games</a>
-        <a href="/new-game?id={{id}}" class="nav-link confirmation">new-games</a>
+        <a href="/new-game?id={{id}}" class="nav-link confirmation">new-game</a>
         <a href="/run-game?id={{id}}" class="nav-link">running-game</a>
+        {% endif %}
 
     </div>
 </div>

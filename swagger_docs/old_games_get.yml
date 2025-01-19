@@ -1,0 +1,18 @@
+tags:
+  - Game History
+summary: View old games list
+parameters:
+  - name: id
+    in: query
+    type: integer
+    required: true
+    description: Game session ID
+responses:
+  200:
+    description: Returns the old games page
+    content:
+      text/html:
+        schema:
+          type: string
+  302:
+    description: Redirects to home if session not found

@@ -1,0 +1,16 @@
+tags:
+  - Game Management
+summary: Stop running game
+parameters:
+  - name: id
+    in: query
+    type: integer
+    required: true
+    description: Game session ID
+responses:
+  200:
+    description: Game stopped successfully
+  302:
+    description: Redirects to games menu
+  404:
+    description: Session or active game not found

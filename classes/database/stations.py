@@ -1,29 +1,37 @@
-from datetime import datetime
-from flask import session
-
-import constance
-from classes.database.GameSession import GameSession
-
-db = constance.db
+"""Stations database model."""
+from datetime import datetime, timezone
+from classes.database.db import db
 
 
 class Stations(db.Model):
-    # to init db in terminal type: python ->from app import db->db.create_all()-> exit(). and you are set!
+    """Stations database model."""
+
+    __tablename__ = "stations"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
-    point = db.Column(db.Integer(), default=0, nullable=False)
-    bonus_time_seconds = db.Column(db.Integer(), default=90, nullable=False)
-    date_created = db.Column(db.DateTime, default=datetime.utcnow)
-    connected = db.Column(db.Boolean, default=False, nullable=False)
-    last_ping = db.Column(db.DateTime, default=datetime.utcnow)
-    session = db.Column(db.Integer, db.ForeignKey(GameSession.id))
+    point = db.Column(db.Integer, nullable=False)
+    bonus_time_seconds = db.Column(db.Integer, nullable=False)
+    connected = db.Column(db.Boolean(), default=False, nullable=False)
+    last_ping = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    session = db.Column(db.Integer, db.ForeignKey("game_session.id"), nullable=False)
 
+    # Relationships
+    take_overs = db.relationship(
+        "StationsTakeOvers",
+        backref=db.backref("station", lazy=True),
+        lazy="dynamic",
+        cascade="all, delete-orphan",
+    )
 
-    def __repr__(self):
-        return '<Name %r>' % self.id
+    def __init__(
+        self, name: str, point: int, bonus_time_seconds: int, session: int
+    ) -> None:
+        """Initialize a new station."""
+        self.name = name
+        self.point = point
+        self.bonus_time_seconds = bonus_time_seconds
+        self.session = session
 
-
-def checkIfInSession():
-    if not ('email' in session):
-        return False
-    return True
+    def __repr__(self) -> str:
+        """Return string representation of the station."""
+        return f"<Station {self.name}>"

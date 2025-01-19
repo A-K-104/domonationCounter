@@ -1,0 +1,25 @@
+tags:
+  - Game Management
+summary: Check if game is active
+parameters:
+  - name: id
+    in: query
+    type: integer
+    required: true
+    description: Game session ID
+responses:
+  200:
+    description: Returns game status
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            isAlive:
+              type: boolean
+              description: Whether the game is active
+            scores:
+              type: object
+              description: Current game scores if game is active
+  404:
+    description: Session not found

@@ -1,27 +1,37 @@
-from datetime import datetime
-from flask import session
-import constance
-from classes.database.GameSession import GameSession
-
-db = constance.db
+"""Games database model."""
+from datetime import datetime, timezone
+from classes.database.db import db
 
 
 class Games(db.Model):
-    # to init db in terminal type: python ->from app import db->db.create_all()-> exit(). and you are set!
+    """Games database model."""
+
+    __tablename__ = "games"
     id = db.Column(db.Integer, primary_key=True)
-    active = db.Column(db.Boolean(), default=False, nullable=False)
-    date_created = db.Column(db.DateTime, default=datetime.utcnow)
+    session = db.Column(db.Integer, db.ForeignKey("game_session.id"), nullable=False)
+    active = db.Column(db.Boolean, default=True)
+    start_time = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     date_ended = db.Column(db.DateTime, nullable=True)
-    game_score = db.Column(db.JSON, default={}, nullable=False)
-    session = db.Column(db.Integer, db.ForeignKey(GameSession.id))
 
-    stationsTakeOvers = db.relationship("StationsTakeOvers", backref="Games", lazy=True)
+    # Relationships
+    stations_take_overs = db.relationship(
+        "StationsTakeOvers",
+        backref=db.backref("game", lazy=True),
+        lazy="dynamic",
+        cascade="all, delete-orphan",
+    )
 
-    def __repr__(self):
-        return '<Name %r>' % self.id
+    def __init__(self, active: bool = True, session: int = None) -> None:
+        """Initialize a new game.
 
+        Args:
+            active (bool): Whether the game is active
+            session (int): ID of the game session this game belongs to
+        """
+        self.active = active
+        self.session = session
+        self.start_time = datetime.now(timezone.utc)
 
-def checkIfInSession():
-    if not ('email' in session):
-        return False
-    return True
+    def __repr__(self) -> str:
+        """Return string representation of the game."""
+        return f"<Game {self.id}>"
